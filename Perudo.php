@@ -16,7 +16,7 @@
         //$p=new Partie("Pique","Coeur","Carreau","Trefle");
         //$p=new Partie("Coeur","Trefle","Pique","Carreau");
         //$p=new Partie("Carreau","Pique","Trefle","Coeur");
-        $p=new Partie("Trefle","Carreau","Coeur","Pique");
+        $p=new Partie("Pique","Pique","Pique","Pique");
         $p->main();
         ?>
  </body>
