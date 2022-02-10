@@ -67,7 +67,6 @@ class Pique extends Joueur {
 
       // for ($i=0; $i < $this->nbDes; $i++)
       
-
       $choice = random_int(0, 2);
 
       switch ($choice) {
