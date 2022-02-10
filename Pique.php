@@ -29,7 +29,6 @@ class Pique extends Joueur {
       $this->HistoCoups = array();
    }
 
-
    public function evaluer($qte, $val, $palifico, $nbDes) {
       //// PARAMETRES DE LA FONCTION evaluer() ////
       /*
