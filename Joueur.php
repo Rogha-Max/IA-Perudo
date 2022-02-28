@@ -15,6 +15,9 @@ abstract class Joueur {
 		return $this->name;
 	}
 	
+	public function getNbDes(){
+		return $this->nbDes;
+  	}
 	
 	public function perdreUnDe(){
 		$this->nbDes--;
