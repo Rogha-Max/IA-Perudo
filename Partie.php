@@ -1,6 +1,10 @@
        
         <?php
+require_once("Humain.php"); //AB
 require_once("Pique.php"); //AB
+require_once("Coeur.php"); //AB
+require_once("Carreau.php"); //AB
+require_once("Trefle.php"); //AB
 
 class Partie { //AB
 
@@ -33,7 +37,7 @@ class Partie { //AB
 			//echo array_shift($stack); //retourne orange, puis banana
 
 			$this->nbDesParJoueur = array(5,5,5,5);
-			$this->noteParJoueur=array(10,10,10,10);
+			$this->noteParJoueur=array(14,14,14,14);
 			$this->joueursElimines = array(false,false,false,false);
 			$this->desParJoueur=array(); 
 			for ($i=0;$i<4;$i++) $this->desParJoueurs[$i]=array(); //tableau de 4x5
@@ -108,21 +112,34 @@ public function main(){
 		$nbJoueursActifs=4;		
 		$joueurAvant=3;
 		$joueurApres=1;
-		
+        $fichier = fopen('partie.json', 'w+');
+
+
 		
     /*SYSTEME DE NOTATION :
-    - si vous êtes accusés de bluff et que c'est pas vrai vous gagnez un point
-    - si vous êtes accusés de bluff et que c'est vrai l'accusateur un point
-    - si vous dites "exactement" et que c'est vrai, vous gagnez un point
-    - si vous dites "exactement" et que c'est pas vrai, le joueur précédent gagne un point
+    PERTE DE 1 POINT
+    - si vous dites "exactement" et que c'est faux
+    - si vous perdez un dé parce que vous avez bluffé
+    - si vous accusez un advesaire de bluff alors que c'est faux
+    
+    GAIN DE 1 POINT
+    - si vous dites "exactement" et que c'est vrai
+    - si vous accusez un advesaire de bluff alors que c'est vrai
+    - celui qui gagne la partie, gagne 1 point
     */
 		//echo "<h1>En lice : 0:".$this->joueurs[0]->getName()." - 1:".$this->joueurs[1]->getName()." - 2:".$this->joueurs[2]->getName()." - 3:".$this->joueurs[3]."</h1>";
 
 		
-		
+    $identite = '{"identite" : ["'.$this->joueurs[0]->getName().'","'.$this->joueurs[1]->getName().'","'.$this->joueurs[2]->getName().'","'.$this->joueurs[3]->getName().'"],';
+		fwrite($fichier, $identite);
+         fwrite($fichier, '"tours" : { ');
 	//jouer
+        $t=0;
 		while(!$finPartie){//jusqu'à ce qu'il n'y ait plus qu'un seul joueur
-
+            $t++;
+            if($t<2) fwrite($fichier, '"tour'.$t.'" : { ');
+            else fwrite($fichier, ',"tour'.$t.'" : { ');
+            
 			//vider le tableau des dés
 			for($joueur=0;$joueur<4;$joueur++)
 				for ($des=0;$des<5;$des++)
@@ -137,14 +154,25 @@ public function main(){
 			
 			
 			//faire lancer les dés aux 4 joueurs et répartir les résultats par valeur dans lesDes
+            
+            fwrite($fichier, '"lesDes" : {');
 			for($j=0;$j<4;$j++){
 				if (! $this->joueursElimines[$j]){
+                    fwrite($fichier, '"Des'.$j.'" : ['.$j.','.$this->joueurs[$j]->getNbDes());
 					$this->desParJoueur[$j]=$this->joueurs[$j]->lancerlesDes();
 					$this->lesDes[0]+=$this->nbDesParJoueur[$j];
 					for ($i=0;$i<$this->nbDesParJoueur[$j];$i++){
 						$this->lesDes[$this->desParJoueur[$j][$i]]++;
+                        fwrite($fichier, ','.$this->desParJoueur[$j][$i]);
+					} //cas où le nombre de dés du joueurs est inférieur à 5, alors on complete les valeurs par des 0 dans le json
+                    for ($i=$this->nbDesParJoueur[$j];$i<5;$i++){
+                        fwrite($fichier, ',0');
 					}
+                    if ($j<3) fwrite($fichier, '],');
+                    else fwrite($fichier, ']},');
 				}
+                else if ($j<3) fwrite($fichier, '"Des'.$j.'" : ['.$j.',0,0,0,0,0,0],');
+                    else  fwrite($fichier, '"Des'.$j.'" : ['.$j.',0,0,0,0,0,0]},');
 			}
             //print_r($this->desParJoueur);
 
@@ -172,8 +200,11 @@ public function main(){
 			while($this->joueursElimines[$joueurQuiJoue])
 				$joueurQuiJoue=$this->quelJoueurApres($joueurQuiJoue);
 			
-			
+			fwrite($fichier, '"annonces" : {');
+            $premiertour=true;
 			while(!$finTour){//un tour c'est un joueur qui fait une annonce
+                if($premiertour) $premiertour=false;
+                else fwrite($fichier, ',');
 		//APPELER ICI LES METHODES QUIAPRES ET QUIAVANT
 				$joueurApres=$this->quelJoueurApres($joueurQuiJoue);
 				$joueurAvant=$this->quelJoueurAvant($joueurQuiJoue);				
@@ -186,6 +217,7 @@ public function main(){
                 echo $this->joueurs[$joueurQuiJoue]->getName()." dit : ". $reponseJoueur[0]."-".$reponseJoueur[1]."<br>";
                 $coup=array($joueurQuiJoue, $reponseJoueur[0], $reponseJoueur[1]);
                 
+                fwrite($fichier, '"say'.$joueurQuiJoue.'" : ['.$joueurQuiJoue.','.$reponseJoueur[0].','.$reponseJoueur[1].']');
                     
 				array_push($this->coupsJoues,$coup);
 				
@@ -212,19 +244,20 @@ public function main(){
 							//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setText("X");
 							//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setForeground(Color.red);
 							$this->joueursElimines[$joueurQuiJoue]=($this->nbDesParJoueur[$joueurQuiJoue]==0);
-							$this->noteParJoueur[$joueurAvant]++; //le joueur précédent
+							$this->noteParJoueur[$joueurQuiJoue]--;//NOTATION 2019
 							$joueurQuiRelance=$joueurQuiJoue;
 							$this->lesDes[0]--;
 							$finTour=true;
 						}
 						else{ //s'il y a bien bluff
 							if ($this->nbDesParJoueur[$joueurAvant]==2) $deuxUn=true;
-							$this->nbDesParJoueur[$joueurAvant]=$this->joueurs[$joueurAvant]->perdreUnDe();//celui qui jouait avant le joueur en cours
+							$this->nbDesParJoueur[$joueurAvant]=$this->joueurs[$joueurAvant]->perdreUnDe();//celui qui jouait avant le joueur en cours	
+							$this->noteParJoueur[$joueurAvant]--; //NOTATION 2019 il a bluffé, il a perdu un dé, il perd un point
 							//CSS
 							//tousLesLabels[joueurAvant][nbDesParJoueur[joueurAvant]].setText("X");
 							//tousLesLabels[joueurAvant][nbDesParJoueur[joueurAvant]].setForeground(Color.red);
 							$this->joueursElimines[$joueurAvant]=($this->nbDesParJoueur[$joueurAvant]==0); 
-							$this->noteParJoueur[$joueurQuiJoue]++;
+							$this->noteParJoueur[$joueurQuiJoue]++; //NOTATION 2019
 							$joueurQuiRelance=$joueurAvant;
 							$this->lesDes[0]--;
 							$finTour=true;
@@ -240,19 +273,20 @@ public function main(){
 							//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setText("X");
 							//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setForeground(Color.red);
 							$this->joueursElimines[$joueurQuiJoue]=($this->nbDesParJoueur[$joueurQuiJoue]==0);
-							$this->noteParJoueur[$joueurAvant]++;
+							$this->noteParJoueur[$joueurQuiJoue]--;//NOTATION 2019
 							$joueurQuiRelance=$joueurQuiJoue;
 							$this->lesDes[0]--;
 							$finTour=true;
 						}
 						else{
 							if ($this->nbDesParJoueur[$joueurAvant]==2) $deuxUn=true;
-							$this->nbDesParJoueur[$joueurAvant]=$this->joueurs[$joueurAvant]->perdreUnDe();//celui qui jouait avant le joueur en cours 
+							$this->nbDesParJoueur[$joueurAvant]=$this->joueurs[$joueurAvant]->perdreUnDe();//celui qui jouait avant le joueur en cours
+							$this->noteParJoueur[$joueurAvant]--; //NOTATION 2019 il a bluffé, il a perdu un dé, il perd un point 
 							//CSS
 							//tousLesLabels[joueurAvant][nbDesParJoueur[joueurAvant]].setText("X");
 							//tousLesLabels[joueurAvant][nbDesParJoueur[joueurAvant]].setForeground(Color.red);
 							$this->joueursElimines[$joueurAvant]=($this->nbDesParJoueur[$joueurAvant]==0); 
-							$this->noteParJoueur[$joueurQuiJoue]++;
+							$this->noteParJoueur[$joueurQuiJoue]++; //NOTATION 2019
 							$joueurQuiRelance=$joueurAvant;
 							$this->lesDes[0]--;
 							$finTour=true;
@@ -273,18 +307,19 @@ public function main(){
 							if ($qte==$this->total){ //si c'est bien exactement
                                 $mem=$this->nbDesParJoueur[$joueurQuiJoue];
 								$this->nbDesParJoueur[$joueurQuiJoue]=$this->joueurs[$joueurQuiJoue]->gagnerUnDe();//celui qui joue gagne
-								$this->noteParJoueur[$joueurQuiJoue]++;
+								$this->noteParJoueur[$joueurQuiJoue]++; //NOTATION 2019
 								if($mem>$this->nbDesParJoueur[$joueurQuiJoue]) $this->lesDes[0]++;
 								$finTour=true;
 							}
 							else{//si c'est pas exactement
 								if ($this->nbDesParJoueur[$joueurQuiJoue]==2) $deuxUn=true;
-								$this->nbDesParJoueur[$joueurQuiJoue]=$this->joueurs[$joueurQuiJoue]->perdreUnDe(); //celui qui joue perd
+								$this->nbDesParJoueur[$joueurQuiJoue]=$this->joueurs[$joueurQuiJoue]->perdreUnDe(); //celui qui joue perd    
+								$this->noteParJoueur[$joueurQuiJoue]--; //NOTATION 2019
 								//CSS
 								//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setText("X");
 								//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setForeground(Color.red);
 								$this->joueursElimines[$joueurQuiJoue]=($this->nbDesParJoueur[$joueurQuiJoue]==0);
-								$this->noteParJoueur[$joueurAvant]++; //l'autre gagne donc un point
+								//$this->noteParJoueur[$joueurAvant]++; //l'autre gagne donc un point NOTATION 2019
 								$this->lesDes[0]--;
 								$finTour=true;
 							}
@@ -293,18 +328,19 @@ public function main(){
 							if ($qte==$this->lesDes[$val]){ //si c'est bien exactement
                                 $mem=$this->nbDesParJoueur[$joueurQuiJoue];
 								$this->nbDesParJoueur[$joueurQuiJoue]=$this->joueurs[$joueurQuiJoue]->gagnerUnDe();//celui qui joue gagne
-								$this->noteParJoueur[$joueurQuiJoue]++;
+								$this->noteParJoueur[$joueurQuiJoue]++; //NOTATION 2019
 								if($mem>$this->nbDesParJoueur[$joueurQuiJoue]) $this->lesDes[0]++;
 								$finTour=true;
 							}
 							else{//si c'est pas exactement
 								if ($this->nbDesParJoueur[$joueurQuiJoue]==2) $deuxUn=true;
 								$this->nbDesParJoueur[$joueurQuiJoue]=$this->joueurs[$joueurQuiJoue]->perdreUnDe(); 
+								$this->noteParJoueur[$joueurQuiJoue]--; //NOTATION 2019
 								//CSS
 								//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setText("X");
 								//tousLesLabels[joueurQuiJoue][nbDesParJoueur[joueurQuiJoue]].setForeground(Color.red);
 								$this->joueursElimines[$joueurQuiJoue]=($this->nbDesParJoueur[$joueurQuiJoue]==0);
-								$this->noteParJoueur[$joueurAvant]++;
+								//$this->noteParJoueur[$joueurAvant]++; //NOTATION 2019
 								$this->lesDes[0]--;
 								$finTour=true;
 							}
@@ -313,7 +349,6 @@ public function main(){
 					}
 
 				}//fin if
-			
 				//Compter combien de joueurs restent à la fin du tour
 				$nbJoueursActifs=0;
 				for ($i=0;$i<4;$i++)
@@ -326,26 +361,44 @@ public function main(){
 				$joueurQuiJoue=$joueurApres;
 				
 				//evaluer si prochain tour est palifico
-				if($deuxUn){ $palifico=true; echo " => palifico !";} //CSS
-				else $palifico=false;
-				$deuxUn=false;
+                if($finTour){
+                    if($deuxUn){ $palifico=true; echo " => palifico !";} //CSS
+                    else $palifico=false;
+                    $deuxUn=false;
+                }
 			}//finTour
 			
+			     fwrite($fichier, '}');
 			//tester si fin de partie (s'il ne reste qu'un seul joueur)
 			$finPartie=($nbJoueursActifs==1);
 			//System.out.println("fin de partie ? "+finPartie);
 			//System.out.println("qui relance ? "+joueurQuiRelance);
-				
+			fwrite($fichier, '}');	
 		}//finPartie
+    
+       
 		echo "<br><br>Bilan du match :<br>"; //CSS
+                fwrite($fichier, '}, "notes" : [');
+    $gagnant =0;
 		for($i=0;$i<4;$i++){
+                fwrite($fichier, $this->noteParJoueur[$i]);
+                if ($i<3) fwrite($fichier, ',');
+                else fwrite($fichier, '],');
 			echo "joueur ".$this->joueurs[$i]->getName()." : "; //REVOIR
-			if($this->joueursElimines[$i]) echo "perdu. Note : ".$this->noteParJoueur[$i]."<br>";
-			else echo "Victoire. Note : ".$this->noteParJoueur[$i]."<br>";
+			if($this->joueursElimines[$i]) {echo "perdu. Note : ".$this->noteParJoueur[$i]."<br>";
+                                           }
+			else {
+				$this->noteParJoueur[$i]++; //gain en cas de victoire NOTATION 2019
+				echo "Victoire. Note : ".$this->noteParJoueur[$i]."<br>";
+                $gagnant = $i;
+			}
 		
 		}
-			
+    
+                fwrite($fichier, '"gagnant" : '.$gagnant);
 		
+                fwrite($fichier, '}');	
+		fclose($fichier);
         }//fin main
 }//fin classe
 ?>
