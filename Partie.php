@@ -1,10 +1,6 @@
        
         <?php
-require_once("Humain.php"); //AB
 require_once("Pique.php"); //AB
-require_once("Coeur.php"); //AB
-require_once("Carreau.php"); //AB
-require_once("Trefle.php"); //AB
 
 class Partie { //AB
 
