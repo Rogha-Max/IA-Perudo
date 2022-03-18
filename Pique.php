@@ -27,7 +27,7 @@ class Pique extends Joueur {
    //// Fonctions d'analyse de notre main et du jeu ////
    /////////////////////////////////////////////////////
 
-   public function historique($coupsJoues, $nbDesParJoueur) { //// Fonction contenant l'historique des coups et le nombre des dés de chaque joueurs
+   public function historique($coupsJoues, $nbDesParJoueur) { //// Fonction contenant l'historique des coups et le nombre de dés de chaque joueurs
       $this->DesJoueurs = $nbDesParJoueur;
       
       $this->HistoCoups = $coupsJoues;
@@ -58,7 +58,7 @@ class Pique extends Joueur {
       }   
    }
 
-   public function topValue() { //// Fonction pour determiner la valeur qui se répete le plus dans notre main
+   public function topValue() { //// Fonction pour determiner la valeur qui se répète le plus dans notre main
       $t = array(1 => 0,0,0,0,0,0); //tableau contenant le nombre de dés de chaque valeur
       $mostValue = 0; //valeur la plus présente dans notre main
       $nbFois = 0; //nombre de fois que le dés est présent
@@ -84,9 +84,9 @@ class Pique extends Joueur {
    }
 
 
-   //////////////////////////////////////////////////////////////
-   //// Fonction qui évalue et reourne notre décision de jeu ////
-   //////////////////////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////
+   //// Fonction qui évalue et retourne notre décision de jeu ////
+   ///////////////////////////////////////////////////////////////
 
    public function evaluer($qte, $val, $palifico, $nbDes) {
       //// PARAMETRES DE LA FONCTION evaluer() ////
@@ -113,7 +113,7 @@ class Pique extends Joueur {
          elseif ($first && !$palifico) { ///// On joue en premier et il nous reste plus d'un dés
             $this->premier($nbDes);
          }
-         elseif (!$first && $palifico) { ///// On joue pas en premier mais en palifico
+         elseif (!$first && $palifico) { ///// On ne joue pas en premier mais en palifico
             $this->palifico($qte, $val, $nbDes);
          }
          elseif (!$first && !$palifico && $paco) { ///// On joue ni en premier ni en palifico mais en paco
@@ -137,12 +137,13 @@ class Pique extends Joueur {
 
    public function outPaco($qtePaco){ //// Fonction permettant de sortir du mode paco
       array_push($this->Decision, $qtePaco*2+1, 2);
-   }   public function inPaco($qte){
- //// Fonction permettant d'entrer en mode paco
-      array_push($this->Decision, ceil($qte/2), 1);   }
-   public function bluff(){
- //// Fonction permettant d'accuser de bluff
-      array_push($this->Decision, -1, 0);   }
+   }
+   public function inPaco($qte){ //// Fonction permettant d'entrer en mode paco
+      array_push($this->Decision, ceil($qte/2), 1);
+   }
+   public function bluff(){ //// Fonction permettant d'accuser de bluff
+      array_push($this->Decision, -1, 0);
+   }
      public function calza(){ //// Fonction permettant d'annoncer calza
       array_push($this->Decision, 0, -1);
    }
@@ -213,7 +214,7 @@ class Pique extends Joueur {
             $val = -1;
             break;
       }
-      if ($val > 6) $val = 6;
-      if ($qte > 10) $val = -1;
+      if ($val > 6) $val = 6; //empêche de retourner une valeur > à 6
+      if ($qte > 10) $qte = -1; //accuse de bluff
       array_push($this->Decision, $qte, $val);
    }}
