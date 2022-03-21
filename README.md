@@ -1,7 +1,7 @@
-# IA-Perudo
+# Projet IA - 2ème année MMI
 
-#### Guillaume BENARD
 #### Maxime DESGRANGES
+#### Guillaume BENARD
 #### Aubin EBANO
 #### Seyhan YLMAZ
 #### Sebastien BROS
