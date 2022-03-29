@@ -9,7 +9,7 @@ class Pique extends Joueur {
    private $WeAre;
    private $Prev;
    private $Decision;
-   private $TopMain;
+   private $Hand;
    private $probaGlobal;
    private $imax;
 
@@ -21,7 +21,7 @@ class Pique extends Joueur {
       $this->WeAre = "A definir";
       $this->Prev = "A definir";
       $this->Decision = array();
-      $this->TopMain = [
+      $this->Hand = [
          'topValue' => 0,
          'nTime' => 0,
          'nbPaco' => 0,
@@ -90,9 +90,18 @@ class Pique extends Joueur {
 
       $nbPaco = $t[1];
 
-      $this->TopMain['topValue'] = $mostValue;
-      $this->TopMain['nTime'] = $nbFois;
-      $this->TopMain['nbPaco'] = $nbPaco;
+      $this->Hand['topValue'] = $mostValue;
+      $this->Hand['nTime'] = $nbFois;
+      $this->Hand['nbPaco'] = $nbPaco;
+   }
+
+   public function inHand($faceDé){
+      $inHand = FALSE;
+      foreach ($this->mesDes as $value) {
+         if ($value == $faceDé) return TRUE;
+         else $inHand = FALSE;
+      }
+      return $inHand;
    }
 
    function fact($n){ //// Fonction factorielle qui sera réutilisée dans les calculs plus tard
@@ -125,21 +134,21 @@ class Pique extends Joueur {
         $P += $f * (pow(2, $n - $i)) / (pow(3, $n));
     }
 
-    //echo "il y a au moins $ProbAuMoins une valeur de 2 a 6 ou le paco--";
+    ////echo "il y a au moins $ProbAuMoins une valeur de 2 a 6 ou le paco--";
 
     //Calcul de la probabilité qu'il y ai exactement k fois la valeur
 
     $f = $this->fact($n) / ($this->fact($k) * $this->fact($n - $k));
     $ProbExactement = $f * (pow(2, $n - $k)) / (pow(3, $n));
 
-    //echo "il y a exactement $ProbExactement une valeur de 2 a 6 ou le paco--";
+    ////echo "il y a exactement $ProbExactement une valeur de 2 a 6 ou le paco--";
 
     //calcul exactement k fois le PACO
 
     $f = $this->fact($n) / ($this->fact($k) * $this->fact($n - $k));
     $ProbExactementPaco = $f * (pow(5, $n - $k)) / (pow(6, $n));
 
-    //echo "il y a exactement $ProbExactementPaco le paco--";
+    ////echo "il y a exactement $ProbExactementPaco le paco--";
 
     //calcul au moins k fois le PACO
 
@@ -148,7 +157,7 @@ class Pique extends Joueur {
         $ProbAuMoinsPaco += $f * (pow(5, $n - $i)) / (pow(6, $n));
     }
 
-    //echo "il y a au moins $ProbAuMoinsPaco le paco--";
+    ////echo "il y a au moins $ProbAuMoinsPaco le paco--";
 
     $data = array($ProbAuMoins, $ProbExactement, $ProbExactementPaco, $ProbAuMoinsPaco);
     //print_r($data);
@@ -159,11 +168,11 @@ class Pique extends Joueur {
         if ($max < $data[$i]) {
             $max = $data[$i];
             $imax = $i;
-            //echo "<br>i = $i, max = $max <br>";
+            ////echo "<br>i = $i, max = $max <br>";
         }
 
-    //echo "-- $imax";
-    //echo "-- $data[$imax]";
+    ////echo "-- $imax";
+    ////echo "-- $data[$imax]";
     $this->probaGlobal['AuMoins'] = $ProbAuMoins;
     $this->probaGlobal['Exactement'] = $ProbExactement;
     $this->probaGlobal['ExactementPaco'] = $ProbExactementPaco;
@@ -207,37 +216,43 @@ class Pique extends Joueur {
             $this->palifico($qte, $val, $nbDes);
          }
          elseif (!$first && !$palifico && $paco) { ///// On joue ni en premier ni en palifico mais en paco
-            $this->paco($qte, $val, $nbDes);
+            $this->paco($qte, $nbDes);
          }
          elseif (!$first && !$palifico && !$paco) { ///// On joue ni en premier ni en palifico ni en paco (CAS NORMAL)
-            if ($qte > $nbDes*0.8) {
-               $this->inPaco($qte);
-            } else {
-               $this->randomIA($qte, $val);
-            }
-            /*if($qte > $this->DesJoueurs[$this->Prev]*1.5){
+            if ($qte >= floor($nbDes*0.45) && $qte <= floor($nbDes*0.6)) {
+               if ($this->Hand["nbPaco"] != 0) {
+                  $this->inPaco($qte);
+               }
+               else {
+                  $this->Decision = [$qte+=1, $val];
+               }
+            } elseif ($qte >= ceil($nbDes*0.6)){
                $this->bluff();
-               echo "1 <br>";
+            }else{
+               if($qte > $this->DesJoueurs[$this->Prev]*1.5){
+                  $this->bluff();
+                  //echo "1 <br>";
+               }
+               elseif($this->probaGlobal['AuMoins'] < 0.70){
+                  $this->bluff();
+                  //echo "2 " . $this->probaGlobal['AuMoins'] . "<br>";
+               }
+               elseif($this->probaGlobal['Exactement'] > 0.60 && $this->nbDes <= 2){
+                  $this->calza();
+                  //echo "3" . $this->probaGlobal['Exactement'] . "<br>";
+               }
+               elseif($qte >= $nbDes){
+                  $this->bluff();
+                  //echo "4 <br>";
+               }
+               else{
+                  $this->randomIA($qte, $val);
+               }
             }
-            elseif($this->probaGlobal['AuMoins'] < 0.70){
-               $this->bluff();
-               echo "2 " . $this->probaGlobal['AuMoins'] . "<br>";
-            }
-            elseif($this->probaGlobal['Exactement'] > 0.60){
-               $this->calza();
-               echo "3" . $this->probaGlobal['Exactement'] . "<br>";
-            }
-            elseif($qte >= $nbDes){
-               $this->bluff();
-               echo "4 <br>";
-            }
-            else{
-               $this->randomIA($qte, $val);
-            }*/
          }
-         else { ///// Au cas ou aucun cas n'a pu être rempli on appel l'IA random (/!\PAS NORMAL/!\)
+         /*else { ///// Au cas ou aucun cas n'a pu être rempli on appel l'IA random (/!\PAS NORMAL/!\)
             $this->randomIA($qte, $val);
-         }
+         }*/
       }
       return $this->Decision;
    }
@@ -248,24 +263,21 @@ class Pique extends Joueur {
    ////////////////////////////////////
 
    public function outPaco($qtePaco){ //// Fonction permettant de sortir du mode paco
-      echo "outpaco ";
-      if ($this->TopMain['nbPaco'] != 0) {
-         $newQte = $qtePaco*2 + $this->TopMain['nbPaco'];
-      } else {
-         $newQte = $qtePaco*2 + 1;
-      }
-      $this->Decision = [$newQte, $this->TopMain['topValue']];
+      //echo "outpaco ";
+      $newQte = $qtePaco*2 + 1;
+      $newVal = ($this->Hand['topValue'] == 1) ? 2 : $this->Hand['topValue'] ;
+      $this->Decision = [$newQte, $newVal];
    }
    public function inPaco($qte){ //// Fonction permettant d'entrer en mode paco
-      echo "inpaco ";
+      //echo "inpaco ";
       $this->Decision = [ceil($qte/2), 1];
    }
    public function bluff(){ //// Fonction permettant d'accuser de bluff
-      echo "bluff ";
+      //echo "bluff ";
       $this->Decision = [-1, 0];
    }
    public function calza(){ //// Fonction permettant d'annoncer calza
-      echo "calza ";
+      //echo "calza ";
       $this->Decision = [0, -1];
    }
 
@@ -275,13 +287,13 @@ class Pique extends Joueur {
    ///////////////////////////////////////
 
    public function oneLast($qteAnnonce, $valAnnonce, $plateau){ //// Fonction de gameplay lorsqu'il nous reste un seul dés
-      echo "oneLast ";
-      if ($qteAnnonce == 0) $this->premier($plateau);
+      //echo "oneLast ";
+      if ($qteAnnonce == 0) $this->premier($plateau); //si on joue en premier
       elseif ($qteAnnonce < $plateau*0.4) { //si la quantité annoncée est inférieure à 40% du nombre de dés restants
-         if ($valAnnonce < $this->TopMain['topValue']) { //si la valeur annoncée est inférieur à notre dé
-            $this->Decision = [$qteAnnonce, $this->TopMain['topValue']]; //On sur-enchérit avec notre dé
+         if ($valAnnonce < $this->Hand['topValue']) { //si la valeur annoncée est inférieur à notre dé
+            $this->Decision = [$qteAnnonce, $this->Hand['topValue']]; //On sur-enchérit avec notre dé
          } else {
-            $this->Decision = [++$qteAnnonce, $valAnnonce]; //On augmente la quantité de 1
+            $this->Decision = [++$qteAnnonce, $valAnnonce]; //Sinon on augmente la quantité de 1
          }
       } elseif ($qteAnnonce == floor($plateau*0.4)) { //si la quantité annoncée vaut 40% du nombre de dés restants
          $this->calza(); //on annonce exactement
@@ -291,19 +303,19 @@ class Pique extends Joueur {
    }
 
    public function premier($plateau){ //// Fonction de gameplay lorsqu'on joue en premier
-      echo "first ";
-      if ($this->TopMain['nTime'] == 1) { //cas où nos dés sont tous différents
+      //echo "first ";
+      if ($this->Hand['nTime'] == 1) { //cas où nos dés sont tous différents
          $this->Decision = [round($plateau/6), 2];
       } else {
-         if ($this->TopMain['topValue'] == 1) { //si notre meilleur dé est un paco
-            $this->Decision = [++$this->TopMain['nbPaco'], 3]; //on joue notre nombre de paco + 1
+         if ($this->Hand['topValue'] == 1) { //si notre meilleur dé est un paco
+            $this->Decision = [++$this->Hand['nbPaco'], 3]; //on joue notre nombre de paco + 1
          } else {
             if ($this->nbDes >= $plateau/4) { //si on a plus d'un quart des dés en jeu
-            $this->Decision = [$this->TopMain['nTime'], $this->TopMain['topValue']]; //on joue notre dé le plus présent, le nombre de fois qu'il est présent, de notre main
+            $this->Decision = [$this->Hand['nTime'], $this->Hand['topValue']]; //on joue notre dé le plus présent, le nombre de fois qu'il est présent, de notre main
             } else { //si on a moins d'un quart des dés en jeu (gameplay agressif)
-               $qteJouee = $this->TopMain['nTime'] + $this->TopMain['nbPaco']; //somme meilleur dé et paco
+               $qteJouee = $this->Hand['nTime'] + $this->Hand['nbPaco']; //somme meilleur dé et paco
                $qteJouee = ceil($qteJouee + ($qteJouee/2)); //on joue cette somme + elle-même divisé par 2 arrondit au supérieur
-               $this->Decision = [$qteJouee, $this->TopMain['topValue']];
+               $this->Decision = [$qteJouee, $this->Hand['topValue']];
             }
          }
       }   
@@ -311,19 +323,54 @@ class Pique extends Joueur {
 
 
    public function palifico($qteAnnonce, $valAnnonce, $plateau){ //// Fonction de gameplay lorsqu'on est en mode palifico
-      echo "palifico ";
-      if($qteAnnonce >= $plateau/2) { //si le nombre de dés annoncés est plus grand que la moitiée des dés restants
-         echo "ici ";
-         $this->bluff(); //accuse de bluff
+      //echo "palifico ";
+      if ($this->inHand($valAnnonce)) { //si on a la face annoncée dans notre main
+         if($qteAnnonce >= $plateau/2) { //si le nombre de dés annoncés est plus grand que la moitiée des dés restants
+            $this->bluff(); //accuse de bluff
+         } else {
+            $this->Decision = [$qteAnnonce+=1, $valAnnonce]; //on augmente la quantité
+         }
       } else {
-         echo "pasici ";
-         $this->Decision = [$qteAnnonce+=1, $valAnnonce]; //on augmente la quantité
+         if ($this->DesJoueurs[$this->Prev] == 1) { //il ne reste qu'un dé au joueur avant nous
+            if ($qteAnnonce >= $plateau*0.45) { //si le nombre de dés annoncés vaut moins de 45% des dés restants
+               $this->bluff(); //accuse de bluff
+            } else {
+               $this->Decision = [$qteAnnonce+=1, $valAnnonce]; //on augmente la quantité
+            }
+         }
+         elseif($qteAnnonce >= floor($plateau*0.4)) { //si le nombre de dés annoncés est inférieur à 40% des dés restants
+            $this->calza(); //accuse de bluff
+         } else {
+            $this->bluff();
+         }
       }
    }
 
-   public function paco($qteAnnonce, $valAnnonce, $plateau){ //// Fonction de gameplay lorsqu'on est en mode paco
-      echo "paco ";
-      if ($qteAnnonce > $plateau / 3) {
+   public function paco($qtePaco, $plateau){ //// Fonction de gameplay lorsqu'on est en mode paco
+      //echo "paco ";
+      if ($qtePaco*2+1 > round($plateau*0.45)) {
+         $this->bluff();
+      }
+      else {
+         if ($qtePaco > $plateau / 3) {
+            $this->bluff(); //on accuse de bluff
+         } elseif ($qtePaco == floor($plateau/4)){     // afinner le filtre
+            $this->outPaco($qtePaco); //on sort du paco
+         } else {
+            $this->Decision = [$qtePaco+=1, 1]; //on augmente la quantité
+         }
+      }
+   }
+
+      /*if ($qtePaco < floor($plateau*0.3)){   // note : 30 c'est peu, penser a changer valeur en cas d'echec
+            if($this->Hand['nbPaco'] == 0){
+               $this->Decision = [$qtePaco+=1, 1];         
+            }elseif ($qtePaco > ceil($this->Hand['nbPaco']*2.5)) {
+               $this->outPaco($qtePaco);
+            }
+         }
+
+      /*if ($qteAnnonce > $plateau / 3) {
          $this->bluff(); //on accuse de bluff
       } elseif ($qteAnnonce == floor($plateau/4)){     // afinner le filtre
          $this->outPaco($qteAnnonce); //on sort du paco
@@ -332,29 +379,28 @@ class Pique extends Joueur {
       }
       
       
-      /*if ($qteAnnonce >= $plateau/5){ //si le nombre de dés annoncés est plus grand qu'un quart des dés restants
+      if ($qteAnnonce >= $plateau/5){ //si le nombre de dés annoncés est plus grand qu'un quart des dés restants
          if ($qteAnnonce > $this->nbDes/3) { //si le nombre de dés annoncés est plus grand qu'un tiers du nombre de dés qu'il nous reste
-            echo "coucou : $qteAnnonce $this->nbDes";
+            //echo "coucou : $qteAnnonce $this->nbDes";
             $this->Decision = [$qteAnnonce+=1, 1]; //on augmente la quantité
          } else { 
-            echo "coucou la";
+            //echo "coucou la";
             $this->bluff(); //accuse de bluff
          }
      } else { 
-      echo "coucou pas la";
+      //echo "coucou pas la";
         $this->outPaco($valAnnonce); //on sort du paco
      }*/
-   }
 
    public function randomIA($qte, $val){ //// Fonction de gameplay en mode aléatoire
-      echo "random ";
+      //echo "random ";
 
       if ($qte >= 9) $this->bluff(); //accuse de bluff
       else {
          $choice = random_int(0, 2) ;
          switch ($choice) {
             case 0:
-               echo "cas0 ";
+               //echo "cas0 ";
                if ($val == 6) {
                   $this->Decision = [++$qte, $val]; //augmente la quantité
                } else {
@@ -362,11 +408,11 @@ class Pique extends Joueur {
                }
                break;
             case 1:
-               echo "cas1 ";
+               //echo "cas1 ";
                $this->Decision = [++$qte, $val]; //augmente la quantité
                break;
             case 2:
-               echo "cas2 ";
+               //echo "cas2 ";
                if ($val == 6) {
                   $this->Decision = [++$qte, $val]; //augmente la quantité
                } else {
@@ -374,15 +420,15 @@ class Pique extends Joueur {
                }
                break;
             /*case 3: //bluff
-               echo "cas3 ";
+               //echo "cas3 ";
                $this->bluff();
                break;
             case 4: //calza
-               echo "cas4 ";
+               //echo "cas4 ";
                $this->calza();
                break;
             case 5: //annonce paco
-               echo "cas5 ";
+               //echo "cas5 ";
                $this->inPaco($qte); 
                break;*/
          }
