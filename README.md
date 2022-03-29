@@ -1,10 +1,9 @@
 # Projet IA - 2ème année MMI
 
-#### Maxime DESGRANGES
-#### Guillaume BENARD
+#### [Maxime DESGRANGES](https://github.com/Rogha-Max/)
+#### [Guillaume BENARD](https://github.com/Guigzouz)
 #### Aubin EBANO
 #### Seyhan YLMAZ
-#### Sebastien BROS
 
 Projet réalisé en seconde année de DUT MMI au Semestre 4
 
