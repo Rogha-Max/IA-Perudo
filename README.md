@@ -7,4 +7,4 @@
 
 Projet réalisé en seconde année de DUT MMI au Semestre 4
 
-Création d'un Intelligence Artificielle capable de jouer au Perduo.
+Création d'un Intelligence Artificielle capable de jouer au Perudo.
